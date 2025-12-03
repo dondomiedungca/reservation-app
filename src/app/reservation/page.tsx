@@ -275,6 +275,12 @@ const Page = () => {
         </DialogTitle>
         <DialogContent>
           <Grid container mt={1} spacing={2}>
+            <Grid size={12}>
+              <Typography variant="body2">
+                Reservation for{" "}
+                <strong>{format(values.date, "MMM. dd, yyyy")}</strong>
+              </Typography>
+            </Grid>
             <Grid size={6}>
               <TextField
                 fullWidth
@@ -424,7 +430,9 @@ const Page = () => {
                 color={values.extended ? "info" : "secondary"}
                 disabled={!values.extended}
                 icon={<PaymentIcon />}
-                label={`${values.extended ? "With" : "Without"} Additional Fee`}
+                label={`${
+                  values.extended ? "With Additional" : "Regular"
+                } Fee (${values.extended ? "5pm-12am" : "5pm-10pm"})`}
                 variant="outlined"
               />
             </Grid>
@@ -491,7 +499,7 @@ const Page = () => {
                     ) : undefined
                   }
                   color={reservation.extended ? "info" : "secondary"}
-                  label={reservation.extended ? "12pm" : "10pm"}
+                  label={reservation.extended ? "12am" : "10pm"}
                 />
               </span>
             </Typography>
