@@ -11,8 +11,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Reservations" }, { status: 404 });
     }
     return NextResponse.json(reservations);
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Something went wrong",
+      },
+      { status: 500 }
+    );
   }
 }
 
@@ -22,7 +27,12 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const user = await Reservation.create(body);
     return NextResponse.json(user, { status: 201 });
-  } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Something went wrong",
+      },
+      { status: 500 }
+    );
   }
 }
