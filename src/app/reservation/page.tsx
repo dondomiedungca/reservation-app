@@ -1,15 +1,18 @@
 "use client";
 
+import axios from "axios";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import * as Yup from "yup";
-import axios from "axios";
+import { addDays, format, isSameDay } from "date-fns";
+import { useFormik } from "formik";
 
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PaymentIcon from "@mui/icons-material/Payment";
 import {
   Alert,
   AlertTitle,
+  Badge,
   Button,
   Card,
   Checkbox,
@@ -28,9 +31,8 @@ import {
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { addDays, format } from "date-fns";
-import { useFormik } from "formik";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { PickersDay, PickersDayProps } from "@mui/x-date-pickers/PickersDay";
 
 interface Reservation {
   firstName: string;
@@ -47,6 +49,20 @@ interface SnackbarProps {
   severity: "error" | "success";
   message: string;
 }
+
+const StyledDayContainer = styled.div`
+  &.selected {
+    button {
+      border-radius: 50%;
+      background-color: #dadada;
+      color: #a6a6a6 !important;
+
+      &.Mui-selected {
+        background-color: #838383;
+      }
+    }
+  }
+`;
 
 const StyledDiv = styled.div`
   width: 100vw;
@@ -65,10 +81,19 @@ const StyledDiv = styled.div`
     .reservation-container {
       width: 520px;
     }
+
+    ${(props) => props.theme.breakpoints.down("md")} {
+      flex-direction: column-reverse;
+
+      .reservation-container,
+      .calendar-container {
+        width: 100%;
+      }
+    }
   }
 `;
 
-const tomorrow = addDays(new Date(), 1);
+const now = new Date();
 
 const reservationSchema = Yup.object({
   firstName: Yup.string().required(),
@@ -82,6 +107,7 @@ const reservationSchema = Yup.object({
 
 const Page = () => {
   const [open, setOpen] = useState(false);
+  const [dateFilter, setDateFilter] = useState(() => now);
   const [snackbar, setSnackbar] = useState<SnackbarProps>({
     open: false,
     severity: "success",
@@ -95,6 +121,20 @@ const Page = () => {
   } = useMutation({
     mutationFn: (reservation: Reservation) => {
       return axios.post("/api/reservation", reservation);
+    },
+  });
+
+  const {
+    data: reservations,
+    isFetching,
+    refetch,
+  } = useQuery<Reservation[]>({
+    queryKey: ["reservations", dateFilter],
+    queryFn: async () => {
+      const response = await axios.get("/api/reservation", {
+        params: { dateFilter: format(dateFilter, "yyyy-MM-dd") },
+      });
+      return response.data;
     },
   });
 
@@ -118,7 +158,7 @@ const Page = () => {
       email: "",
       contact: "",
       numberOfPersons: 5,
-      date: tomorrow,
+      date: null as unknown as Date,
       extended: false,
     } as Reservation,
     onSubmit: async (values) => {
@@ -132,6 +172,7 @@ const Page = () => {
         severity: ok ? "success" : "error",
       });
       resetForm();
+      refetch();
       setOpen(false);
     },
   });
@@ -139,6 +180,27 @@ const Page = () => {
   const handleClose = () => {
     setOpen(false);
   };
+
+  function ServerDay(props: PickersDayProps & { highlightedDays?: number[] }) {
+    const { day, outsideCurrentMonth, ...other } = props;
+
+    const isSelected = reservations?.some((reservation) =>
+      isSameDay(reservation.date, day)
+    );
+
+    return (
+      <StyledDayContainer
+        key={day.toString()}
+        className={isSelected ? "selected" : undefined}
+      >
+        <PickersDay
+          {...other}
+          outsideCurrentMonth={outsideCurrentMonth}
+          day={day}
+        />
+      </StyledDayContainer>
+    );
+  }
 
   return (
     <>
@@ -152,23 +214,39 @@ const Page = () => {
                 </Typography>
               </AlertTitle>
               <Typography variant="caption">
-                Extended hours have additional fee worth of ₱ 2,000
+                Additional 2 hours have additional fee worth of{" "}
+                <strong>₱ 2,000</strong>
               </Typography>
             </Alert>
-            <Typography variant="subtitle2" mt={2} mb={2}>
-              Details
-            </Typography>
+            <Typography variant="subtitle2" mt={2} mb={2}></Typography>
           </div>
           <div className="calendar-container">
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DateCalendar
+                timezone="UTC"
                 disablePast
+                loading={isFetching}
                 value={values.date}
-                onChange={(value) => setFieldValue("date", value, true)}
+                slots={{ day: ServerDay }}
+                onChange={(value) => {
+                  if (!value) return;
+                  if (
+                    (reservations || []).some((reservation) =>
+                      isSameDay(reservation.date, value)
+                    )
+                  ) {
+                    return;
+                  }
+                  setFieldValue("date", value, true);
+                }}
+                onMonthChange={(value) => {
+                  setDateFilter(value);
+                }}
               />
             </LocalizationProvider>
             <Button
               fullWidth
+              disabled={isFetching || isPending || !values.date}
               className="reserve-button"
               variant="contained"
               color="primary"
@@ -186,10 +264,7 @@ const Page = () => {
       </StyledDiv>
       <Dialog open={open}>
         <DialogTitle>
-          <Typography>
-            Create Reservation for{" "}
-            <strong>{format(values.date, "MMM dd, yyyy")}</strong>
-          </Typography>
+          <Typography>Create Reservation</Typography>
         </DialogTitle>
         <DialogContent>
           <Grid container mt={1} spacing={2}>
@@ -334,13 +409,15 @@ const Page = () => {
                     }
                   />
                 }
-                label="2 hours extended"
+                label={
+                  <Typography variant="body2">2 hours extended</Typography>
+                }
               />
               <Chip
-                color="info"
+                color={values.extended ? "info" : "secondary"}
                 disabled={!values.extended}
                 icon={<PaymentIcon />}
-                label="With Additional Fee"
+                label={`${values.extended ? "With" : "Without"} Additional Fee`}
                 variant="outlined"
               />
             </Grid>

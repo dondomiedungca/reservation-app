@@ -1,15 +1,26 @@
 import { Reservation } from "@/features/reservation";
 import connectDB from "@/lib/mongodb";
+import { toDate } from "date-fns";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
+    const dateFilter = request.nextUrl.searchParams.get("dateFilter");
+    const now = new Date();
+    const month = toDate(dateFilter || now).getMonth() + 1;
+    const year = toDate(dateFilter || now).getFullYear();
 
-    const reservations = await Reservation.find();
-    if (!reservations) {
-      return NextResponse.json({ error: "Reservations" }, { status: 404 });
-    }
+    const reservations = dateFilter
+      ? await Reservation.find({
+          $expr: {
+            $and: [
+              { $eq: [{ $month: "$date" }, month] },
+              { $eq: [{ $year: "$date" }, year] },
+            ],
+          },
+        })
+      : [];
     return NextResponse.json(reservations);
   } catch (error: unknown) {
     return NextResponse.json(

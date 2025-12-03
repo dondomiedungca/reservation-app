@@ -1,5 +1,6 @@
 "use client";
 import { createTheme, ThemeProvider as BaseThemeProvider } from "@mui/material";
+import { ThemeProvider as StyledThemeProvider } from "styled-components";
 import React, { ReactNode } from "react";
 
 const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -15,7 +16,11 @@ const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     },
   });
 
-  return <BaseThemeProvider theme={theme}>{children}</BaseThemeProvider>;
+  return (
+    <BaseThemeProvider theme={theme}>
+      <StyledThemeProvider theme={theme}>{children}</StyledThemeProvider>
+    </BaseThemeProvider>
+  );
 };
 
 export default ThemeProvider;

@@ -6,8 +6,8 @@ import "@/assets/global.css";
 import QueryClientProvider from "@/components/QueryClientProvider";
 
 export const metadata: Metadata = {
-  title: "Frontend Boilerplate",
-  description: "Frontend boilerplate for large and enterprise applications.",
+  title: "Reservation App",
+  description: "Reservation App",
 };
 
 export default function RootLayout({

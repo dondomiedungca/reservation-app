@@ -10,23 +10,30 @@ import Drawer from "@mui/material/Drawer";
 import IconButton from "@mui/material/IconButton";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemText from "@mui/material/ListItemText";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import React from "react";
-import { useState } from "react";
+import React, { useState } from "react";
 import styled from "styled-components";
 
 const drawerWidth = 240;
-const navItems = ["home", "about", "contact", "reservation"];
+const navItems = [
+  { label: "Home", to: "/" },
+  { label: "About", to: "/about" },
+  { label: "Contact", to: "/contact" },
+  { label: "Reservation", to: "/reservation" },
+] as const;
 
 const StyledButton = styled(Button)`
   color: #fff;
   text-transform: capitalize;
   margin-left: 10px;
+
+  &.mobile {
+    color: #3c467b;
+    margin-left: 0;
+  }
 
   &.active {
     background: #3c467b;
@@ -63,16 +70,17 @@ const Header: React.FC = () => {
             Reservation App
           </Typography>
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
-            {navItems.map((item) => (
-              <Link href={`/${item}`} key={item}>
+            {navItems.map((item, i) => (
+              <Link href={item.to} key={i}>
                 <StyledButton
                   className={
-                    pathname.substring(1).toLowerCase() === item.toLowerCase()
+                    pathname.substring(1).toLowerCase() ===
+                    item.label.toLowerCase()
                       ? "active"
                       : ""
                   }
                 >
-                  {item}
+                  {item.label}
                 </StyledButton>
               </Link>
             ))}
@@ -101,11 +109,20 @@ const Header: React.FC = () => {
             </Typography>
             <Divider />
             <List>
-              {navItems.map((item) => (
-                <ListItem key={item} disablePadding>
-                  <ListItemButton sx={{ textAlign: "center" }}>
-                    <ListItemText primary={item} />
-                  </ListItemButton>
+              {navItems.map((item, i) => (
+                <ListItem key={i} disablePadding>
+                  <Link href={item.to}>
+                    <StyledButton
+                      className={
+                        pathname.substring(1).toLowerCase() ===
+                        item.label.toLowerCase()
+                          ? "active"
+                          : "mobile"
+                      }
+                    >
+                      {item.label}
+                    </StyledButton>
+                  </Link>
                 </ListItem>
               ))}
             </List>
