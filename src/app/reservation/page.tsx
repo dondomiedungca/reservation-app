@@ -8,6 +8,8 @@ import { addDays, format, isSameDay } from "date-fns";
 import { useFormik } from "formik";
 
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import StarBorderOutlinedIcon from "@mui/icons-material/StarBorderOutlined";
+import StarBorderPurple500Icon from "@mui/icons-material/StarBorderPurple500";
 import PaymentIcon from "@mui/icons-material/Payment";
 import {
   Alert,
@@ -107,6 +109,7 @@ const reservationSchema = Yup.object({
 
 const Page = () => {
   const [open, setOpen] = useState(false);
+  const [reservation, setReservation] = useState<Reservation>();
   const [dateFilter, setDateFilter] = useState(() => now);
   const [snackbar, setSnackbar] = useState<SnackbarProps>({
     open: false,
@@ -218,9 +221,13 @@ const Page = () => {
                 <strong>₱ 2,000</strong>
               </Typography>
             </Alert>
-            <Typography variant="subtitle2" mt={2} mb={2}></Typography>
           </div>
           <div className="calendar-container">
+            {!values.date && (
+              <Typography variant="caption" fontWeight={600}>
+                Select Date
+              </Typography>
+            )}
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DateCalendar
                 timezone="UTC"
@@ -230,11 +237,11 @@ const Page = () => {
                 slots={{ day: ServerDay }}
                 onChange={(value) => {
                   if (!value) return;
-                  if (
-                    (reservations || []).some((reservation) =>
-                      isSameDay(reservation.date, value)
-                    )
-                  ) {
+                  const reservation = (reservations || []).find((reservation) =>
+                    isSameDay(reservation.date, value)
+                  );
+                  if (reservation) {
+                    setReservation(reservation);
                     return;
                   }
                   setFieldValue("date", value, true);
@@ -257,7 +264,7 @@ const Page = () => {
                 setOpen(true);
               }}
             >
-              Submit Reservation
+              Create Reservation
             </Button>
           </div>
         </Card>
@@ -448,6 +455,95 @@ const Page = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      {reservation && (
+        <Dialog
+          open
+          fullWidth
+          maxWidth="xs"
+          onClose={() => setReservation(undefined)}
+        >
+          <DialogTitle>
+            <Typography>Reservation Details</Typography>
+          </DialogTitle>
+          <DialogContent>
+            <Typography
+              display="flex"
+              justifyContent="space-between"
+              variant="subtitle2"
+            >
+              <span>Date:</span>
+              <span>{format(reservation.date, "MMM. dd, yyyy")}</span>
+            </Typography>
+            <Typography
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              variant="subtitle2"
+            >
+              <span>Time:</span>
+              <span>
+                5pm -{" "}
+                <Chip
+                  size="small"
+                  icon={
+                    reservation.extended ? (
+                      <StarBorderPurple500Icon fontSize="small" />
+                    ) : undefined
+                  }
+                  color={reservation.extended ? "info" : "secondary"}
+                  label={reservation.extended ? "12pm" : "10pm"}
+                />
+              </span>
+            </Typography>
+            <br />
+            <br />
+            <Typography
+              display="flex"
+              justifyContent="space-between"
+              variant="subtitle2"
+            >
+              <span>Reserved by:</span>
+              <span>
+                {reservation.firstName} {reservation.lastName}
+              </span>
+            </Typography>
+            <Typography
+              display="flex"
+              justifyContent="space-between"
+              variant="subtitle2"
+            >
+              <span>Email:</span>
+              <span>{reservation.email}</span>
+            </Typography>
+            <Typography
+              display="flex"
+              justifyContent="space-between"
+              variant="subtitle2"
+            >
+              <span>Contact:</span>
+              <span>{reservation.contact}</span>
+            </Typography>
+            <Typography
+              display="flex"
+              justifyContent="space-between"
+              variant="subtitle2"
+            >
+              <span>Persons:</span>
+              <span>{reservation.numberOfPersons}</span>
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button
+              disabled={isPending}
+              size="small"
+              color="secondary"
+              onClick={() => setReservation(undefined)}
+            >
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+      )}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
